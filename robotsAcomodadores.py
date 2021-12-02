@@ -32,6 +32,9 @@ class Robot(Agent):
         if (len(self.model.CoorCajas)-1 >= self.id) or (self.estado == 1):
             # print(self.model.CoorCajas[self.id])
 
+            if self.monton >= self.model.NumMontones-1:
+                self.monton = self.model.NumMontones-1
+
             if self.estado == 0:
                 # print("El estado es: ", self.estado, " y el id es: ", self.id)
                 # Posición de la Caja a Recolectar
@@ -48,6 +51,7 @@ class Robot(Agent):
                     self.estado = 1
                     self.model.CoorCajas.remove(BoxPos)
             
+            # Moviendose hacia un monton de cajas
             if self.estado == 1:
                 # Posición del Monton de Cajas
                 BoxesPos = self.model.CoorMontones[self.monton]
@@ -58,9 +62,11 @@ class Robot(Agent):
                             i.nivel += 1
                             i.enTransporte = False
                             i.pos = nueva_pos
+                            print("Robot: ", self.id, " entregó en montón: ", self.monton)
                             break
                     self.estado = 0
                     self.monton += 1
+                    self.model.NumCajasAcomodadas += 1
         else:
             final_pos = (self.id, 2)
             nueva_pos = self.moverse(final_pos)
@@ -112,9 +118,10 @@ class Maze(Model):
 
         self.NumPasos = 0
         self.NumPasosRobots = 0
+        self.NumCajasAcomodadas = 0
 
         # Sección pra los montones de cajas
-        self.NumMontones = ((NumCajas-(NumCajas % 5)) / 5)+2
+        self.NumMontones = ((NumCajas-(NumCajas % 5)) / 5)+1
         self.NumMontones = int(self.NumMontones)
         self.CoorMontones = []
         self.CantMontones = []
@@ -170,7 +177,7 @@ class Maze(Model):
         # print("matrix[1][1]: \n", matrix[1][1])
         
     def step(self):
-        if self.NumPasos < self.Tiempo:
+        if (self.NumPasos < self.Tiempo) and (self.NumCajasAcomodadas < self.NumCajas):
             self.schedule.step()
             self.NumPasos += 1
             self.NumPasosRobots += self.NumRobots
@@ -219,6 +226,7 @@ server = ModularServer(Maze, [
         grid,
         label("Tiempo Necesario: ", "NumPasos"), 
         label("Movimientos de Robots: ", "NumPasosRobots"),
+        label("Cajas Acomodadas: ", "NumCajasAcomodadas"),
     ], 
     "Actividad Integradora - A01733616", 
     {
@@ -226,7 +234,7 @@ server = ModularServer(Maze, [
         "Alto": Alto,
         "NumRobots": UserSettableParameter("number", "Número de Robots", 5),
         "NumCajas": UserSettableParameter("number", "Número de Cajas", 22),
-        "Tiempo": UserSettableParameter("number", "Tiempo de Ejecución", 100)
+        "Tiempo": UserSettableParameter("number", "Tiempo de Ejecución", 200)
     }
 )
 server.port = 8524
